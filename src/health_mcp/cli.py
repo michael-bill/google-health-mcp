@@ -83,6 +83,13 @@ def main() -> int:
     headers.add_argument("--credentials-file", required=True)
     test = sub.add_parser("smoke")
     test.add_argument("--credentials-file", default=".secrets/client.env")
+    vault = sub.add_parser("init-vault")
+    vault.add_argument("--key-file", required=True)
+    migrate = sub.add_parser("import-google")
+    migrate.add_argument("label")
+    migrate.add_argument("--credentials-stdin", action="store_true", required=True)
+    disconnect = sub.add_parser("disconnect-google")
+    disconnect.add_argument("label")
     args = parser.parse_args()
     # Client-side header helper is invoked by Codex, never as an agent-visible tool.
     if args.command == "headers":
@@ -104,23 +111,84 @@ def main() -> int:
         print(json.dumps(result))
         return 0
     try:
+        if args.command == "init-vault":
+            from .vault import TokenVault
+
+            private_write(args.key_file, TokenVault.create_key_ring())
+            print("Encryption key created; value not printed")
+            return 0
         if args.command == "smoke" or (args.command == "serve" and args.transport == "stdio"):
             # Load explicit per-user credentials before Settings snapshots env.
             # A blank refresh-token placeholder in server .env must not hide it.
             load_dotenv(args.credentials_file, override=True)
         settings = Settings.load(args.env_file)
         store = Store(settings.database)
+        if args.command in ("import-google", "disconnect-google"):
+            from .oauth_store import OAuthStore
+            from .vault import TokenVault
+
+            if settings.auth_mode != "oauth":
+                raise HealthError("OAUTH_MODE_REQUIRED")
+            repository = OAuthStore(
+                store,
+                TokenVault(settings.token_key_file),
+                settings.client_id,
+                settings.client_secret,
+            )
+            with store.connect() as db:
+                row = db.execute(
+                    "SELECT id FROM users WHERE label=? AND enabled=1", (args.label,)
+                ).fetchone()
+            if not row:
+                raise HealthError("USER_NOT_FOUND")
+            if args.command == "disconnect-google":
+                repository.revoke_user(row["id"])
+                print("Google connection removed and MCP sessions revoked")
+                return 0
+            # Migration accepts a private pipe, never a command-line token argument.
+            payload = json.loads(sys.stdin.read(65536))
+
+            async def import_connection():
+                google = GoogleClient()
+                try:
+                    credentials = Credentials(
+                        settings.client_id, settings.client_secret, payload["refresh_token"]
+                    )
+                    counters = Counters()
+                    identity = await google.request(
+                        credentials, counters, "GET", "users/me/identity"
+                    )
+                    access = await google.access(credentials, counters)
+                    from .catalog import SCOPES
+
+                    if not set(SCOPES).issubset(access.scopes):
+                        raise HealthError("GOOGLE_SCOPES_MISSING_RECONNECT")
+                    repository.save_connection(
+                        identity["healthUserId"],
+                        credentials.refresh_token,
+                        access.scopes,
+                        row["id"],
+                    )
+                finally:
+                    await google.close()
+
+            asyncio.run(import_connection())
+            print("Google connection imported and encrypted; no credentials printed")
+            return 0
         if args.command == "add-user":
             target = Path(args.credentials_file)
             if target.exists():
                 raise HealthError("CREDENTIAL_FILE_ALREADY_EXISTS")
             uid, token = store.add_user(args.label)
+            guidance = (
+                "Use this invitation key for your first browser connection."
+                if settings.auth_mode == "oauth"
+                else "Set GOOGLE_REFRESH_TOKEN locally or provide it through the environment."
+            )
             try:
                 private_write(
                     target,
-                    "HEALTH_MCP_TOKEN="
-                    + token
-                    + "\n# Set GOOGLE_REFRESH_TOKEN locally or provide it through the environment.\n",
+                    f"HEALTH_MCP_TOKEN={token}\n# {guidance}\n",
                 )
             except OSError:
                 store.disable_user(args.label)
@@ -142,6 +210,16 @@ def main() -> int:
             print(json.dumps(store.stats(args.days), indent=2))
         elif args.command == "prune":
             store.prune()
+            if settings.auth_mode == "oauth":
+                from .oauth_store import OAuthStore
+                from .vault import TokenVault
+
+                OAuthStore(
+                    store,
+                    TokenVault(settings.token_key_file),
+                    settings.client_id,
+                    settings.client_secret,
+                ).prune()
             print("Expired cache, cursors and usage older than 90 days removed")
         elif args.command == "smoke":
             load_dotenv(args.credentials_file, override=False)
@@ -159,6 +237,8 @@ def main() -> int:
             store.prune()
             local = None
             if args.transport == "stdio":
+                if settings.auth_mode == "oauth":
+                    raise HealthError("OAUTH_REQUIRES_HTTP_USE_FORWARDED_FOR_STDIO")
                 load_dotenv(args.credentials_file, override=False)
                 uid = store.authenticate(os.getenv("HEALTH_MCP_TOKEN", ""))
                 if not uid:

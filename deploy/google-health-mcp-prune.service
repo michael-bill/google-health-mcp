@@ -1,0 +1,17 @@
+[Unit]
+Description=Prune expired Google Health MCP cache and usage
+
+[Service]
+Type=oneshot
+User=health-mcp
+Group=health-mcp
+WorkingDirectory=/opt/google-health-mcp
+EnvironmentFile=/etc/google-health-mcp/server.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/google-health-mcp/.venv/bin/google-health-mcp prune
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/google-health-mcp

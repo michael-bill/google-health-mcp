@@ -1,0 +1,37 @@
+[Unit]
+Description=Google Health MCP
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=health-mcp
+Group=health-mcp
+WorkingDirectory=/opt/google-health-mcp
+EnvironmentFile=/etc/google-health-mcp/server.env
+Environment=PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+ExecStart=/opt/google-health-mcp/.venv/bin/google-health-mcp serve --transport http
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+StateDirectory=google-health-mcp
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/google-health-mcp
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+MemoryMax=512M
+TasksMax=64
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

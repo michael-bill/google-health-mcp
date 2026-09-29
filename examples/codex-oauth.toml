@@ -1,0 +1,5 @@
+# OAuth mode requires only the URL. Do not add Google credential headers.
+[mcp_servers.google_health_remote]
+url = "https://health.example.com/mcp"
+startup_timeout_sec = 30
+tool_timeout_sec = 180

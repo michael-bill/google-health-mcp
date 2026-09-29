@@ -9,6 +9,7 @@ from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 from starlette.responses import FileResponse, JSONResponse
+from starlette.types import ASGIApp
 
 from .catalog import CATALOG, SCOPES
 from .errors import HealthError
@@ -24,6 +25,19 @@ class Runtime:
         self.google = google or GoogleClient()
         self.service = HealthService(settings, self.store, self.google)
         self.local_caller = local_caller
+        self.oauth = None
+        if settings.auth_mode == "oauth":
+            from .oauth import OAuthProvider
+            from .oauth_store import OAuthStore
+            from .vault import TokenVault
+
+            repository = OAuthStore(
+                self.store,
+                TokenVault(settings.token_key_file),
+                settings.client_id,
+                settings.client_secret,
+            )
+            self.oauth = OAuthProvider(settings, repository, self.google.http)
 
     def caller(self, ctx: Context) -> Caller:
         request = ctx.request_context.request
@@ -35,6 +49,8 @@ class Runtime:
         uid = request.scope.get("health_user")
         if uid is None:
             raise HealthError("MCP_AUTHENTICATION_REQUIRED")
+        if self.oauth:
+            return Caller(uid, self.oauth.repository.credentials(uid), Counters())
         headers = request.headers
         # A remote caller NEVER inherits the owner's refresh token.
         cid = headers.get("x-google-client-id")
@@ -315,11 +331,31 @@ class AuthenticatedApp:
         headers = {k.lower(): v for k, v in scope.get("headers", [])}
         if scope["path"] == "/healthz":
             return await JSONResponse({"status": "ok"})(scope, receive, send)
+        oauth = self.runtime.oauth
+        if oauth and (
+            scope["path"]
+            in {
+                "/",
+                "/authorize",
+                "/token",
+                "/register",
+                "/revoke",
+                "/oauth/consent",
+                "/oauth/google/callback",
+            }
+            or scope["path"].startswith("/.well-known/")
+        ):
+            return await self.app(scope, receive, send)
         auth = headers.get(b"authorization", b"")
         uid = None
         if auth.startswith(b"Bearer ") and len(auth) < 1024:
             try:
-                uid = self.runtime.store.authenticate(auth[7:].decode("ascii"))
+                token = auth[7:].decode("ascii")
+                if oauth:
+                    access = await oauth.load_access_token(token)
+                    uid = access.subject if access else None
+                else:
+                    uid = self.runtime.store.authenticate(token)
             except UnicodeError:
                 pass
         if uid is None:
@@ -334,7 +370,13 @@ class AuthenticatedApp:
             return await JSONResponse(
                 {"error": "MCP_AUTHENTICATION_REQUIRED"},
                 401,
-                headers={"WWW-Authenticate": "Bearer"},
+                headers={
+                    "WWW-Authenticate": (
+                        f'Bearer resource_metadata="{oauth.origin}/.well-known/oauth-protected-resource/mcp", scope="health:read"'
+                        if oauth
+                        else "Bearer"
+                    )
+                },
             )(scope, receive, send)
         if sum(len(k) + len(v) for k, v in scope.get("headers", [])) > 32768:
             return await JSONResponse({"error": "HEADERS_TOO_LARGE"}, 431)(scope, receive, send)
@@ -366,8 +408,10 @@ class AuthenticatedApp:
         return await self.app(scope, receive, send)
 
 
-def make_app(runtime: Runtime) -> AuthenticatedApp:
+def make_app(runtime: Runtime) -> ASGIApp:
     app = make_server(runtime).streamable_http_app()
+    if runtime.oauth:
+        app.router.routes[:0] = runtime.oauth.routes()
     original_lifespan = app.router.lifespan_context
 
     @asynccontextmanager
@@ -379,4 +423,20 @@ def make_app(runtime: Runtime) -> AuthenticatedApp:
             await runtime.google.close()
 
     app.router.lifespan_context = application_lifespan
-    return AuthenticatedApp(app, runtime)
+    authenticated = AuthenticatedApp(app, runtime)
+    if runtime.oauth:
+        from urllib.parse import urlsplit
+
+        from starlette.middleware.trustedhost import TrustedHostMiddleware
+
+        from .oauth import OAuthBoundary
+
+        return TrustedHostMiddleware(
+            OAuthBoundary(authenticated, runtime.oauth),
+            allowed_hosts=[
+                urlsplit(runtime.settings.public_url).hostname,
+                "127.0.0.1",
+                "localhost",
+            ],
+        )
+    return authenticated

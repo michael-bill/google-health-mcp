@@ -3,6 +3,11 @@
 Private, read-only Fitbit access through Google Health API. Python 3.11+, SQLite,
 Streamable HTTP and stdio. Each user supplies their own Google authorization.
 
+Two explicit authentication modes are supported. `AUTH_MODE=forwarded` keeps the
+original per-request Google credentials and local stdio workflow. `AUTH_MODE=oauth`
+uses browser login, independent MCP tokens and encrypted server-side Google
+connections. There is no automatic fallback between modes.
+
 ## Features
 
 - 37 catalog data types: activity, health measurements, sleep and nutrition.
@@ -15,7 +20,7 @@ Streamable HTTP and stdio. Each user supplies their own Google authorization.
 Coverage means API support, not that every account/device has every measurement.
 The catalog is based on https://developers.google.com/health/data-types.
 
-## Install and run
+## Install and run locally (forwarded mode)
 
 ```sh
 python3 -m venv .venv
@@ -42,7 +47,7 @@ The endpoint is `http://127.0.0.1:8767/mcp`. `/healthz` is a public liveness che
 Use HTTPS for every non-loopback connection. Relative file paths resolve from
 the server working directory; launch from the repository root.
 
-## Connect clients
+## Connect clients in forwarded mode
 
 | Header | Purpose |
 | --- | --- |
@@ -51,8 +56,7 @@ the server working directory; launch from the repository root.
 | `X-Google-Client-Id`, `X-Google-Client-Secret` | Optional pair for a separate OAuth app |
 
 Without the optional pair, the configured server OAuth client is used. Refresh
-tokens must belong to that client. This implementation uses manually provisioned
-credentials, not a browser-based MCP OAuth authorization server.
+tokens must belong to that client. This mode uses manually provisioned credentials.
 
 For Codex, adapt `examples/codex-http.toml`. The private `http_headers_helper`
 loads credentials outside tool arguments. **Do not run the `headers` command in
@@ -60,12 +64,59 @@ an agent-visible terminal:** its stdout intentionally carries credentials throug
 the MCP client's private subprocess pipe. `examples/codex-env.toml` shows env
 header injection. A `.env` file does not populate Codex's process environment.
 
-Clients without configurable headers need an adapter or a future OAuth login
-integration. Alternatively run one local copy per user:
+Clients without configurable headers can use the OAuth mode below. Alternatively
+run one local copy per user:
 
 ```sh
 google-health-mcp serve --transport stdio --credentials-file .secrets/client.env
 ```
+
+## Browser login (OAuth mode)
+
+Use an HTTPS origin, register `<origin>/oauth/google/callback` on the Google web
+OAuth client, and configure:
+
+```dotenv
+AUTH_MODE=oauth
+PUBLIC_BASE_URL=https://health.example.com
+TOKEN_KEY_FILE=/private/path/token-keys.json
+```
+
+Create the key file once with `google-health-mcp init-vault --key-file ...`.
+Never regenerate it over an existing deployment. Keep an encrypted backup of the
+key ring separate from database backups. Google client credentials remain in the
+server's private OAuth JSON file.
+
+Point the MCP client at `<origin>/mcp` without Google headers. For Codex, see
+`examples/codex-oauth.toml`, or use
+`codex mcp add google_health_remote --url <origin>/mcp --oauth-client-registration dcr`.
+To reconnect, use `codex mcp login google_health_remote --oauth-client-registration dcr`.
+The server supports discovery,
+dynamic client registration, authorization code + S256 PKCE, token refresh and
+revocation. It does not fetch Client ID Metadata Documents.
+
+The server displays explicit consent identifying the client and its callback
+before sending the browser to Google. For first-time enrollment, the operator
+runs `add-user` and privately gives that user the generated invitation key.
+In OAuth mode this key is accepted only during enrollment, never as an HTTP bearer
+credential. First enrollment binds it to the verified Google account. Later
+logins use that account and can leave the invitation field blank.
+
+Google refresh tokens are AES-GCM encrypted in SQLite, bound to their user and
+OAuth client. MCP access tokens last 15 minutes; MCP refresh tokens last 30 days
+from issuance and rotate on use. Replaying a spent refresh token revokes its
+entire token family. Only hashes of MCP tokens and authorization codes are stored.
+
+`disconnect-google <label>` deletes the encrypted Google connection and revokes
+MCP sessions, but does not revoke consent at Google or delete cached health records
+and exports. `revoke-user <label>` disables all further access for the user in both
+modes. New browser authorization may be needed when Google revokes or expires its
+refresh token.
+
+For migration, `import-google <label> --credentials-stdin` accepts a JSON object
+with a `refresh_token` through a **private pipe**, verifies Google identity and
+stores the encrypted connection. Never pass the token as a command-line argument
+or print that input in an agent-visible terminal.
 
 ## Tools
 
@@ -111,8 +162,9 @@ google-health-mcp add-user friend --credentials-file .secrets/friend.env
 google-health-mcp revoke-user friend
 ```
 
-Deliver the key privately. Each friend keeps their own Google token on their own
-computer. HTTP requests never inherit the owner's refresh token. First access
+Deliver the key privately. In forwarded mode each friend keeps their Google token
+on their own computer; in OAuth mode they use the key to enroll through browser
+login. HTTP requests never inherit the owner's refresh token. First access
 binds a user to the verified Google Health identity. Caches, cursors and exports
 are isolated by owner. Switching Google accounts requires a new MCP user.
 
@@ -135,7 +187,8 @@ SDK schema validation failures before handler execution are not handler calls;
 transport authentication failures have separate events.
 
 Cache validity defaults to five minutes. Expired cache/cursors and usage older
-than 90 days are pruned on startup or `prune`; schedule it for long-lived servers.
+than 90 days are pruned on startup or `prune`; the systemd deployment includes a
+daily timer. Expired OAuth transactions and grants are pruned as well.
 TTL invalidates cached results but does not guarantee secure disk erasure.
 
 ## Development
