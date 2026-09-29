@@ -1,0 +1,453 @@
+[
+  {
+    "name": "active-energy-burned",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "active-minutes",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "active-zone-minutes",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "activity-level",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "altitude",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "blood-glucose",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "get",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "body-fat",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "get",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "calories-in-heart-rate-zone",
+    "kind": "Interval",
+    "operations": [
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "core-body-temperature",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "get",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "daily-heart-rate-variability",
+    "kind": "Daily",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "daily-heart-rate-zones",
+    "kind": "Daily",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "daily-oxygen-saturation",
+    "kind": "Daily",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "daily-respiratory-rate",
+    "kind": "Daily",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "daily-resting-heart-rate",
+    "kind": "Daily",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "daily-sleep-temperature-derivations",
+    "kind": "Daily",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "daily-vo2-max",
+    "kind": "Daily",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "distance",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "exercise",
+    "kind": "Session",
+    "operations": [
+      "list",
+      "get",
+      "reconcile"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "floors",
+    "kind": "Interval",
+    "operations": [
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "food",
+    "kind": "Food",
+    "operations": [
+      "list",
+      "get"
+    ],
+    "scopes": [
+      "nutrition.readonly"
+    ]
+  },
+  {
+    "name": "food-measurement-unit",
+    "kind": "Food",
+    "operations": [
+      "list",
+      "get"
+    ],
+    "scopes": [
+      "nutrition.readonly"
+    ]
+  },
+  {
+    "name": "heart-rate",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "heart-rate-variability",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "height",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "get",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "hydration-log",
+    "kind": "Session",
+    "operations": [
+      "list",
+      "get",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "nutrition.readonly"
+    ]
+  },
+  {
+    "name": "nutrition-log",
+    "kind": "Session",
+    "operations": [
+      "list",
+      "get",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "nutrition.readonly"
+    ]
+  },
+  {
+    "name": "oxygen-saturation",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "respiratory-rate-sleep-summary",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  },
+  {
+    "name": "run-vo2-max",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "sedentary-period",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "sleep",
+    "kind": "Session",
+    "operations": [
+      "list",
+      "get",
+      "reconcile"
+    ],
+    "scopes": [
+      "sleep.readonly"
+    ]
+  },
+  {
+    "name": "steps",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "swim-lengths-data",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "time-in-heart-rate-zone",
+    "kind": "Interval",
+    "operations": [
+      "list",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "total-calories",
+    "kind": "Interval",
+    "operations": [
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "vo2-max",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "reconcile"
+    ],
+    "scopes": [
+      "activity_and_fitness.readonly"
+    ]
+  },
+  {
+    "name": "weight",
+    "kind": "Sample",
+    "operations": [
+      "list",
+      "get",
+      "reconcile",
+      "rollup",
+      "dailyRollup"
+    ],
+    "scopes": [
+      "health_metrics_and_measurements.readonly"
+    ]
+  }
+]

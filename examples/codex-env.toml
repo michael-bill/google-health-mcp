@@ -1,0 +1,11 @@
+# Variables must exist in the Codex process environment.
+[mcp_servers.google_health]
+url = "https://your-mcp.example.com/mcp"
+bearer_token_env_var = "HEALTH_MCP_TOKEN"
+tool_timeout_sec = 180
+
+[mcp_servers.google_health.env_http_headers]
+X-Google-Refresh-Token = "GOOGLE_REFRESH_TOKEN"
+# Optional for a separate OAuth application:
+# X-Google-Client-Id = "GOOGLE_CLIENT_ID"
+# X-Google-Client-Secret = "GOOGLE_CLIENT_SECRET"

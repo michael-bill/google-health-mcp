@@ -1,0 +1,8 @@
+*
+!Dockerfile
+!pyproject.toml
+!README.md
+!src/
+!src/health_mcp/
+!src/health_mcp/*.py
+!src/health_mcp/catalog.json

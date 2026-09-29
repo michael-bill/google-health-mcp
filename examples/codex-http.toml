@@ -1,0 +1,8 @@
+# Merge into Codex config. Replace absolute paths and URL.
+# Never run the headers helper in an agent-visible terminal: it outputs secrets
+# to the private pipe consumed by the MCP client.
+[mcp_servers.google_health]
+url = "http://127.0.0.1:8767/mcp"
+http_headers_helper = "/absolute/path/google-health-mcp/.venv/bin/google-health-mcp --env-file /absolute/path/google-health-mcp/.env headers --credentials-file /absolute/path/google-health-mcp/.secrets/client.env"
+startup_timeout_sec = 30
+tool_timeout_sec = 180

@@ -1,0 +1,24 @@
+services:
+  health-mcp:
+    build: ..
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      MCP_HOST: 0.0.0.0
+      SQLITE_PATH: /app/data/health.sqlite3
+      EXPORT_DIR: /app/data/exports
+      GOOGLE_CLIENT_SECRETS_FILE: /run/secrets/google-client.json
+    ports:
+      - "127.0.0.1:8767:8767"
+    volumes:
+      - health-data:/app/data
+      - ${GOOGLE_CLIENT_SECRETS_FILE:?Set the absolute credentials path}:/run/secrets/google-client.json:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  health-data:
