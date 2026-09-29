@@ -1,0 +1,17 @@
+# Local OAuth credentials and private health exports must never be published.
+.env
+.env.*
+!.env.example
+client_secret*.json
+credentials.json
+token.json
+tokens.json
+oauth_tokens.json
+.secrets/
+.private/
+data/
+exports/
+health-data/
+.DS_Store
+__pycache__/
+.venv/
