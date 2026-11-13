@@ -72,3 +72,25 @@ The container uses UID 10001 and a loopback host port. Mount credentials read-on
 with suitable ownership. Put TLS in front of every non-loopback deployment.
 OAuth in Docker additionally requires a persistent key-ring mount and its settings;
 the provided Compose example does not provision these automatically.
+
+## Git-based Docker Swarm deployment
+
+For a single-node Swarm behind an independent Caddy, clone the repository with a
+read-only deploy key into `/opt/google-health-mcp`. Copy `deploy/swarm.env.example`
+to `.env` and set `HEALTH_DOMAIN`. Install the existing web OAuth JSON and a newly
+created vault key as `google-client.json` and `token-keys.json` under
+`/etc/google-health-mcp` (directory mode 0700, owned by UID 10001; files 0400).
+Create `/var/lib/google-health-mcp` owned by UID 10001, mode 0700. These directories
+remain outside the checkout and are mounted into the container.
+
+Run `./deploy.sh` (or `./deploy.sh branch`). It fetches and fast-forwards the chosen
+branch, builds an image tagged with the full Git commit, and updates only the
+`google-health` stack. SQLite requires a single replica. The service publishes no
+host ports and has a 512 MiB memory limit and a 0.5 CPU limit.
+
+Attach the independent Caddy service to the external overlay `health-backend` and
+proxy the HTTPS hostname to `google-health_mcp:8767`. Manage that Caddy in its own
+stack; deploying this application never updates Caddy or Things Plus.
+
+For an existing installation, preserve the vault key and SQLite database before
+updates. The deployment script does not delete data or exports.
